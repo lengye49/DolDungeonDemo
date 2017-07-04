@@ -226,9 +226,9 @@ public class EventActions : MonoBehaviour {
                     _gameManager.ClearRoom();
                     CallOutEventPanel();
 
-                    int dam1 = (int)(_gameManager.heroHpMax * 0.05f);
+                    int dam1 = (int)(GameConfigs.PlayerHp * 0.05f);
                     _gameManager.ReduceHp(dam1);
-                    int att_inc = Random.Range(7, 15);
+                    int att_inc = Random.Range(1, 5);
                     _gameManager.heroAtt += att_inc;
                     _gameManager.UpdateShowProperty();
                     _msgActions.CallInMsg("Hp -" + dam1 + ", Attack +" + att_inc);

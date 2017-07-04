@@ -15,9 +15,10 @@ public class BossActions : MonoBehaviour {
     private int bossDef;
     private int bossHp;
 
-    private int heroShield;
+//    private int heroShield;
     private int heroAtt;
     private int heroDef;
+    private int orgHeroHp;
 
     private List<string> bossNames;
     private List<string> skillNames;
@@ -38,6 +39,7 @@ public class BossActions : MonoBehaviour {
         this.gameObject.transform.localPosition = Vector3.zero;
         this.gameObject.SetActive(true);
         rebirthOtherPlace = false;
+        orgHeroHp = _gameManager.heroHp;
 
         InitBossProperty(level);
         InitHeroProperty();
@@ -56,29 +58,29 @@ public class BossActions : MonoBehaviour {
         bossDef = (int)(GameConfigs.BossDefParam[roomLevel-1] * GameConfigs.PlayerPower / 10000);
         bossHp = Calculations.GetBossHp(GameConfigs.BossPower[roomLevel-1], bossAtt, bossDef);
 
-        if (GameConfigs.IsShowBoss)
-        {
-            bossHp = (int)(bossHp * 0.95f);
-        }
+//        if (GameConfigs.IsShowBoss)
+//        {
+//            bossHp = (int)(bossHp * 0.95f);
+//        }
 
     }
 
     void InitHeroProperty(){
         heroAtt = _gameManager.heroAtt;
         heroDef = _gameManager.heroDef;
-        if (GameConfigs.InBattleShield)
-            heroShield = (int)(heroAtt * 0.5f);
+//        if (GameConfigs.InBattleShield)
+//            heroShield = (int)(heroAtt * 0.5f);
 
         if (GameConfigs.NextBossAttInc > 0)
         {
-            heroAtt = (int)(heroAtt * (1.0f + 0.2f * GameConfigs.NextBossAttInc));
+            heroAtt = heroAtt + 5 * GameConfigs.NextBossAttInc;
             GameConfigs.NextBossAttInc = 0;
 //            _gameManager.UpdateShowProperty("att");
         }
 
         if (GameConfigs.NextBossDefInc > 0)
         {
-            heroDef = (int)(heroDef * (1.0f + 0.2f * GameConfigs.NextBossDefInc));
+            heroDef = heroDef + 2 * GameConfigs.NextBossDefInc;
             GameConfigs.NextBossDefInc = 0;
 //            _gameManager.UpdateShowProperty("def");
         }
@@ -106,10 +108,10 @@ public class BossActions : MonoBehaviour {
 
         if (isHeroAtt)
         {   
-            if (GameConfigs.IsPierceDamage)
-                dam = heroAtt;
-            else
-                dam = Calculations.GetDamage(heroAtt, bossDef);
+//            if (GameConfigs.IsPierceDamage)
+//                dam = heroAtt;
+//            else
+            dam = Calculations.GetDamage(heroAtt, bossDef,GameConfigs.CritRate);
             bossHp -= dam;
             AddLog("你攻击" + bossName + "，它-" + dam + "Hp，余" + bossHp + "hp。");
             isHeroAtt = false;
@@ -119,50 +121,57 @@ public class BossActions : MonoBehaviour {
             r = Random.Range(0, skillNames.Count);
             bossSkill = skillNames[r];
 
-            dam = Calculations.GetDamage(bossAtt, heroDef);
+            dam = Calculations.GetDamage(bossAtt, heroDef, 0);
+
+            r = Random.Range(0, 10000);
+            if (r < GameConfigs.DamageReduceRate)
+                dam = dam / 2;
+
+
             AddLog(bossName + "释放[" + bossSkill + "],造成-" + dam + "Hp");
 
-            int damReduce;
-            if (heroShield > 0)
-            {
-                if (dam > heroShield)
-                {
-                    dam -= heroShield;
-                    damReduce = heroShield;
-                    heroShield = 0;
-                    AddLog("护盾抵挡" + damReduce + "点，护盾破了。");
-                }
-                else
-                {
-                    dam = 0;
-                    heroShield -= dam;
-                    AddLog("护盾抵挡" + dam + "点，护盾剩余"+heroShield+"点。");
-                }
-               
-            }
+//            int damReduce;
+//            if (heroShield > 0)
+//            {
+//                if (dam > heroShield)
+//                {
+//                    dam -= heroShield;
+//                    damReduce = heroShield;
+//                    heroShield = 0;
+//                    AddLog("护盾抵挡" + damReduce + "点，护盾破了。");
+//                }
+//                else
+//                {
+//                    dam = 0;
+//                    heroShield -= dam;
+//                    AddLog("护盾抵挡" + dam + "点，护盾剩余"+heroShield+"点。");
+//                }
+//               
+//            }
 
             if (dam > 0)
             {
-                if (_gameManager.heroHp <= dam)
-                {
-                    AddLog("你挂了。");
-                    if (GameConfigs.DeadlyAttackShield)
-                    {
-                        _gameManager.heroHp = 0;
-                        int addHp = (int)(_gameManager.heroHpMax * 0.3f);
-                        _gameManager.AddHp(addHp);
-                        GameConfigs.DeadlyAttackShield = false;
-                        AddLog("你使用免死盾，Hp恢复" + addHp + "。");
-                    }
-                    else
-                    {
-                        _gameManager.ReduceHp(dam);
-                    }
-                }
-                else
-                {
-                    _gameManager.ReduceHp(dam);
-                }
+                _gameManager.ReduceHp(dam);
+//                if (_gameManager.heroHp <= dam)
+//                {
+//                    AddLog("你挂了。");
+////                    if (GameConfigs.DeadlyAttackShield)
+////                    {
+////                        _gameManager.heroHp = 0;
+////                        int addHp = (int)(_gameManager.heroHpMax * 0.3f);
+////                        _gameManager.AddHp(addHp);
+////                        GameConfigs.DeadlyAttackShield = false;
+////                        AddLog("你使用免死盾，Hp恢复" + addHp + "。");
+////                    }
+////                    else
+////                    {
+//                    _gameManager.ReduceHp(dam);
+////                    }
+//                }
+//                else
+//                {
+//                    _gameManager.ReduceHp(dam);
+//                }
             }
             isHeroAtt = true;
         }
@@ -182,15 +191,23 @@ public class BossActions : MonoBehaviour {
     }
 
     void GetBossReward(){
-        _gameManager.UpdateShowProperty();
-        AddLog("你击败了" + bossName + "。天赋点 +1。");
 
-        int coinR = (int)(20 * (1f + GameConfigs.BossRewardCoinInc / 10000f));
+        if (GameConfigs.HpRecoverRateAfterBoss > 0 && (orgHeroHp>_gameManager.heroHp))
+        {
+            int recover = (orgHeroHp - _gameManager.heroHp) * GameConfigs.HpRecoverRateAfterBoss / 10000;
+            _gameManager.AddHp(recover);
+            AddLog("你通过天赋Hp恢复了" + recover + "。");
+        }
+
+        _gameManager.UpdateShowProperty();
+        AddLog("你击败了" + bossName + "。");
+
+        int coinR = (int)(12 * (1f + GameConfigs.RewardCoinIncRate / 10000f));
         _gameManager.AddCoin(coinR);
 
-        int itemid = Calculations.GetRandomReward(false);
-        _bpAction.AddItem(itemid);
-        AddLog("探索点 +" + coinR + "。" + LoadTxt.ItemDic[itemid].name + " +1。");
+//        int itemid = Calculations.GetRandomReward(false);
+//        _bpAction.AddItem(itemid);
+        AddLog("探索点 +" + coinR + "，天赋点 +1。" );
     }
 
     void CallOutBoss(){

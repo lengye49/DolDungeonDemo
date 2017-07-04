@@ -105,8 +105,9 @@ public class GameManager : MonoBehaviour {
         thisTreasureNum = GameConfigs.TreasureNum;
 
         //设定背景和音效
-        GameBg.sprite = CampBgs[GameConfigs.Camp];
-        GameMusic.clip = CampAudios[GameConfigs.Camp];
+        int camp = Random.Range(0,4);
+        GameBg.sprite = CampBgs[camp];
+        GameMusic.clip = CampAudios[camp];
         GameMusic.loop = true;
         GameMusic.Play();
 
@@ -125,9 +126,15 @@ public class GameManager : MonoBehaviour {
 
         //设置房间
         SetRoomBase();
+        _giftActions.ResetGift();
+        _backpackActions.ResetBackpack();
     }
 
     void SetRoomBase(){
+
+        //读取随机数
+        int seed = GameConfigs.seeds[roomLevel-1];
+        Random.seed = seed;
 
         Rooms = new Room[thisBaseNum * thisBaseNum];
         for (int i = 0; i < Rooms.Length; i++)
@@ -828,16 +835,17 @@ public class GameManager : MonoBehaviour {
                 SetHpColor();
                 break;
             case "att":
+                
                 if (GameConfigs.NextBossAttInc > 0)
                 {
-                    attText.text = heroAtt + " + " + (int)(0.2f * heroAtt * GameConfigs.NextBossAttInc);
+                    attText.text = heroAtt + " + " + 5 * GameConfigs.NextBossAttInc;
                 }else
                     attText.text = heroAtt.ToString();
                 break;
             case "def":
                 if (GameConfigs.NextBossDefInc > 0)
                 {
-                    defText.text = heroDef + " + " + (int)(0.2f * heroDef * GameConfigs.NextBossDefInc);
+                    defText.text = heroDef + " + " + 2 * GameConfigs.NextBossDefInc;
                 }
                 else
                     defText.text = heroDef.ToString();
@@ -861,13 +869,13 @@ public class GameManager : MonoBehaviour {
 
         if (GameConfigs.NextBossAttInc > 0)
         {
-            attText.text = heroAtt + " + " + (int)(0.2f * heroAtt * GameConfigs.NextBossAttInc);
+            attText.text = heroAtt + " + " + 5 * GameConfigs.NextBossAttInc;
         }else
             attText.text = heroAtt.ToString();
         
         if (GameConfigs.NextBossDefInc > 0)
         {
-            defText.text = heroDef + " + " + (int)(0.2f * heroDef * GameConfigs.NextBossDefInc);
+            defText.text = heroDef + " + " + 2 * GameConfigs.NextBossDefInc;
         }
         else
             defText.text = heroDef.ToString();
@@ -885,22 +893,17 @@ public class GameManager : MonoBehaviour {
         int bossDef = GetBossDef();
         int bossHp = GetBossHp(bossAtt, bossDef);
         str += "Boss 血" + bossHp + ",攻" + bossAtt + ",防" + bossDef;
-        int hHp = heroHp;
-        int hAtt = heroAtt;
-        if (GameConfigs.NextBossAttInc > 0)
-        {
-            hAtt = (int)(hAtt * (1.0f + 0.2f * GameConfigs.NextBossAttInc));
-        }
-        int hDef = heroDef;
-        if (GameConfigs.NextBossDefInc > 0)
-        {
-            hDef = (int)(hDef * (1.0f + 0.2f * GameConfigs.NextBossAttInc));
-        }
-        bool win = Calculations.GetSimulateResult(hHp, hAtt, hDef, bossHp, bossAtt, bossDef);
-        if (win)
-            str += ",胜率较高";
-        else
-            str += ",胜率较低";
+//        int hHp = heroHp;
+//        int hAtt = heroAtt;
+//        if (GameConfigs.NextBossAttInc > 0)
+//        {
+//            hAtt = hAtt + 5 * GameConfigs.NextBossAttInc;
+//        }
+//        int hDef = heroDef;
+//        if (GameConfigs.NextBossDefInc > 0)
+//        {
+//            hDef = hDef + 2 * GameConfigs.NextBossDefInc;
+//        }
 
         bossInfo.text = str;
 
@@ -914,10 +917,10 @@ public class GameManager : MonoBehaviour {
     }
     int GetBossHp(int att,int def){
         int bossHp = Calculations.GetBossHp(GameConfigs.BossPower[roomLevel - 1], att, def);
-        if (GameConfigs.IsShowBoss)
-        {
-            bossHp = (int)(bossHp * 0.95f);
-        }
+//        if (GameConfigs.IsShowBoss)
+//        {
+//            bossHp = (int)(bossHp * 0.95f);
+//        }
         return bossHp;
     }
 
@@ -1041,27 +1044,31 @@ public class GameManager : MonoBehaviour {
         SetRoomBase();
     }
 
-    public void Escape(bool allDirection){
-        if (allDirection)
+    public void Escape(){
+        List<int> l = GetNeighbour(OrgPoint);
+        foreach (int i in l)
         {
-            List<int> l = GetNeighbour(OrgPoint);
-            foreach (int i in l)
-            {
-                if (Rooms[i].RoomType != 2)
-                    l.Remove(i);
+            if (Rooms[i].RoomType != 2)
+                l.Remove(i);
 
-                if ((!allLinks.Contains(OrgPoint * 100 + i)) && (!allLinks.Contains(OrgPoint + i * 100)))
-                    l.Remove(i);
-            }
-
-            if (l.Count == 0)
-                return;
-
-            int r = Random.Range(0, l.Count + 1);
-            if (r >= l.Count)
-                return;
-            GoToRoom(l[r]);
+            if ((!allLinks.Contains(OrgPoint * 100 + i)) && (!allLinks.Contains(OrgPoint + i * 100)))
+                l.Remove(i);
         }
+
+        if (l.Count == 0)
+        {
+            Debug.Log("找不到逃跑的路，好忧伤！");
+            return;
+        }
+            
+        //删掉进入点
+        if (l.Count > 1 && l.Contains(thisRoomNum))
+            l.Remove(thisRoomNum);    
+
+        int r = Random.Range(0, l.Count + 1);
+        if (r >= l.Count)
+            return;
+        GoToRoom(l[r]);
     }
 
     //事件活动

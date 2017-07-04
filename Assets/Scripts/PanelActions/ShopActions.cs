@@ -62,7 +62,7 @@ public class ShopActions : MonoBehaviour {
             //生成每个商店
             shops[i]=new Shop();
             shops[i].shopItems = new ShopItem[GameConfigs.ShopItemNum];
-            int[] ids = Calculations.GetItemIdForShop(level, shops[i].shopItems.Length);
+            int[] ids = Calculations.GetItemIdForShop(shops[i].shopItems.Length);
             for (int j = 0; j < shops[i].shopItems.Length; j++)
             {
                 shops[i].shopItems[j] = new ShopItem();
@@ -124,7 +124,7 @@ public class ShopActions : MonoBehaviour {
         else
         {
             int price = LoadTxt.ItemDic[thisShopItem.itemId].price;
-            price = (int)((10000f - GameConfigs.ShopDiscount) / 10000f * price);
+            price = (int)((10000f - GameConfigs.CoinCostReduceRate) / 10000f * price);
             if (_gameManager.coin >= price)
                 bs[5].interactable = true;
             else

@@ -7,10 +7,13 @@ using System.Collections.Generic;
 public class GiftActions : MonoBehaviour {
 
     public GameObject pDamage;
+    public BackpackActions _bpAction;
+
     private int thisGift;
     private int[] thisGiftList;
     private List<int> LearntGifts;
-    private Dictionary<int,int> BookList;
+    private List<int> UnlearntGifts;
+    private List<int> BookList;
     private GameManager _gameManager;
     private Text[] ts;
     private Button[] bs;
@@ -19,36 +22,69 @@ public class GiftActions : MonoBehaviour {
     void Start(){
         _gameManager = this.gameObject.GetComponentInParent<GameManager>();
         this.gameObject.transform.localPosition = new Vector3(0, -3000f, 0);
-        thisGift = 0;
-        LearntGifts = new List<int>();
-        unLearntTypes = new List<int>();
-        InitUnlearntTypes();
-        BookList = InitBookList();
+        ResetGift();
+
         ts = this.gameObject.GetComponentsInChildren<Text>();
         bs = this.gameObject.GetComponentsInChildren<Button>();
     }
 
-    void InitUnlearntTypes(){
+    //数据操作********************************************************
+
+    public void ResetGift(){
+        thisGift = 0;
+        LearntGifts = new List<int>();
+        UnlearntGifts = new List<int>();
+        ResetUnlearntGifts();
+        UpdateBookList();
+    }
+
+
+    /// <summary>
+    /// 重置所有未学过的天赋
+    /// </summary>
+    void ResetUnlearntGifts(){
         foreach (int key in LoadTxt.GiftDic.Keys)
         {
-            if (!unLearntTypes.Contains(LoadTxt.GiftDic[key].type))
-                unLearntTypes.Add(LoadTxt.GiftDic[key].type);
+            UnlearntGifts.Add(key);
         }
     }
 
-    Dictionary<int,int> InitBookList(){
-        Dictionary<int,int> d = new Dictionary<int, int>();
-        foreach (int key in LoadTxt.GiftDic.Keys)
+    /// <summary>
+    /// 更新可学习的天赋列表
+    /// </summary>
+    void UpdateBookList(){
+        BookList = new List<int>();
+        foreach (int key in UnlearntGifts)
         {
-            //需要天赋中有一个id跟type相同
-            if (!unLearntTypes.Contains(LoadTxt.GiftDic[key].type) && (!d.ContainsValue(LoadTxt.GiftDic[key].type)))
+            //如果是初始天赋，直接加进列表
+            if (LoadTxt.GiftDic[key].openReq.Contains(0))
             {
-                d.Add(LoadTxt.GiftDic[key].family,LoadTxt.GiftDic[key].type);//这里貌似有点问题
+                BookList.Add(key);
+                continue;
             }
-            if (!d.ContainsKey(LoadTxt.GiftDic[key].family))
-                d.Add(LoadTxt.GiftDic[key].family, 0);
+            //不是初始天赋，如果上级天赋已经学了，则加进列表
+            foreach (int v in LoadTxt.GiftDic[key].openReq)
+            {
+                if (LearntGifts.Contains(v))
+                {
+                    BookList.Add(key);
+                    break;
+                }
+            }
         }
-        return d;
+    }
+        
+    void SetThreeGifts(){
+
+        List<int> availableGifts = BookList;
+        int num = Mathf.Min(3, availableGifts.Count);
+        thisGiftList = new int[num];
+        for (int i = 0; i < thisGiftList.Length; i++)
+        {
+            int r = Random.Range(0, availableGifts.Count);
+            thisGiftList[i] = availableGifts[r];
+            availableGifts.RemoveAt(r);
+        }
     }
 
 
@@ -62,6 +98,9 @@ public class GiftActions : MonoBehaviour {
         SetGiftPanel();
     }
 
+
+   
+
     public void CallOutGiftPanel(){
         this.gameObject.transform.localPosition = new Vector3(0f,-3000f, 0f);
     }
@@ -71,9 +110,17 @@ public class GiftActions : MonoBehaviour {
         for (int i = 0; i < thisGiftList.Length; i++)
         {
             ts[i+1].text = LoadTxt.GiftDic[thisGiftList[i]].name;
-            ts[i + 1].color = GetTextColor(LoadTxt.GiftDic[thisGiftList[i]].level);
+            ts[i + 1].color = GetTextColor(LoadTxt.GiftDic[thisGiftList[i]].type);
             bs[i].interactable = true;
-            bs[i].gameObject.GetComponent<Image>().color = GetButtonColor(LoadTxt.GiftDic[thisGiftList[i]].type);
+        }
+        if (thisGiftList.Length < 3)
+        {
+            for (int i = thisGiftList.Length; i < 3; i++)
+            {
+                ts[i+1].text = "";
+                ts[i + 1].color = Color.white;
+                bs[i].interactable = false;
+            }
         }
         ChooseGift(0);
     }
@@ -81,86 +128,33 @@ public class GiftActions : MonoBehaviour {
     public void ChooseGift(int index){
         if (index > (thisGiftList.Length - 1))
             return;
-        ts[4].text = LoadTxt.GiftDic[thisGiftList[index]].desc;
+        ts[4].text = LoadTxt.GiftDic[thisGiftList[index]].desc + "(" + LoadTxt.GiftDic[thisGiftList[index]].value + ")";
         thisGift = thisGiftList[index];
 
         for (int i = 0; i < thisGiftList.Length; i++)
         {
-            if(i==index)
+            if (i == index)
                 bs[i].gameObject.GetComponent<Image>().color = Color.yellow;
             else
-                bs[i].gameObject.GetComponent<Image>().color = GetButtonColor(LoadTxt.GiftDic[thisGiftList[i]].type);
+                bs[i].gameObject.GetComponent<Image>().color = Color.white;
         }
 
     }
 
-    Color GetTextColor(int level){
-        switch (level)
-        {
-            case 1:
-                return Color.black;
-            case 2:
-                return Color.blue;
-            case 3:
-                return Color.magenta;
-            case 4:
-                return Color.red;
-            default:
-                return Color.black;
-        }   
-    }
 
-    Color GetButtonColor(int type){
+    Color GetTextColor(int type){
         switch(type)
         {
             case 1:
-                return new Color(229f / 255f, 181f / 255f, 234f / 255f);
+                return new Color(230f / 255f, 13f / 255f, 253f / 255f);
             case 2:
-                return new Color(181f / 255f, 230f / 255f, 234f / 255f);
+                return new Color(76f / 255f, 152f / 255f, 2f / 255f);
             case 3:
-                return new Color(207f / 255f, 234f / 255f, 181f / 255f);
+                return new Color(11f / 255f, 233f / 255f, 251f / 255f);
             default:
                 return Color.white;
 
         }
-    }
-
-    void SetThreeGifts(){
-        
-        List<int> availableGifts = GetAvailableGifts();
-        int num = Mathf.Min(3, availableGifts.Count);
-        thisGiftList = new int[num];
-        for (int i = 0; i < thisGiftList.Length; i++)
-        {
-            int r = Random.Range(0, availableGifts.Count);
-            thisGiftList[i] = availableGifts[r];
-            availableGifts.RemoveAt(r);
-        }
-    }
-
-    List<int> GetAvailableGifts(){
-        List<int> l = new List<int>();
-        foreach (int key in LoadTxt.GiftDic.Keys)
-        {
-            if (unLearntTypes.Contains(LoadTxt.GiftDic[key].type))
-                continue;
-            if (LearntGifts.Contains(key))
-                continue;
-            int thisFamily = LoadTxt.GiftDic[key].family;
-            int thisLevel = LoadTxt.GiftDic[key].level;
-
-            if (thisLevel <= BookList[thisFamily] + 1)
-                l.Add(key);
-        }
-
-        if (unLearntTypes.Count > 0)
-        {
-            foreach (int u in unLearntTypes)
-            {
-                l.Add(u);
-            }
-        }
-        return l;
     }
 
 
@@ -176,137 +170,104 @@ public class GiftActions : MonoBehaviour {
 
 
     void LearnGift(){
-        LearntGifts.Add(thisGift);
+
+        int value = LoadTxt.GiftDic[thisGift].value;
+
         switch (thisGift)
         { 
-            case 110:
-            case 120:
-            case 130:
-                _gameManager.heroAtt += 10;
+            case 1:
+                _gameManager.heroAtt += value;
                 _gameManager.UpdateShowProperty("att");
-                break;
-            case 140:
-                GameConfigs.IsPierceDamage = true;
-                pDamage.SetActive(true);
-                break;
-            case 210:
-            case 220:
-            case 230:
-                _gameManager.heroDef += 5;
+                _gameManager.heroDef += value;
                 _gameManager.UpdateShowProperty("def");
                 break;
-            case 240:
-                GameConfigs.InBattleShield = true;
+            case 100:
+            case 110:
+                _gameManager.heroAtt += value;
+                _gameManager.UpdateShowProperty("att");
                 break;
-            case 1:
-                _gameManager.heroHp += 50;
-                _gameManager.heroHpMax += 50;
+            case 101:
+            case 111:
+                _gameManager.heroDef += value;
+                _gameManager.UpdateShowProperty("def");
+                break;
+            case 112:
+                _gameManager.heroHp += value;
                 _gameManager.UpdateShowProperty("hp");
+                _gameManager.heroHpMax += value;
                 _gameManager.UpdateShowProperty("hpMax");
                 break;
-            case 310:
-            case 320:
-            case 330:
-                _gameManager.heroHp += 80;
-                _gameManager.heroHpMax += 80;
-                _gameManager.UpdateShowProperty("hp");
-                _gameManager.UpdateShowProperty("hpMax");
+            case 120:
+                GameConfigs.CritRate = value;
                 break;
-            case 340:
-                GameConfigs.DeadlyAttackShield = true;
+            case 121:
+                GameConfigs.DamageReduceRate = value;
+                break;
+            case 130:
+                GameConfigs.HpRecoverRateAfterBoss = value;
                 break;
             case 2:
-                _gameManager.heroPower += 60;
+            case 200:
+            case 210:
+                _gameManager.heroPower += value;
                 _gameManager.UpdateShowProperty("power");
                 break;
-            case 410:
-                _gameManager.heroPower += 100;
-                _gameManager.UpdateShowProperty("power");
+            case 220:
+                GameConfigs.BotPowerReduce += value;
                 break;
-            case 420:
+            case 201:
                 GameConfigs.IsShowBoss = true;
-                _gameManager.ShowBoss();
                 break;
-            case 430:
-                _gameManager.heroPower += 200;
-                _gameManager.UpdateShowProperty("power");
-                break;
-            case 440:
+            case 211:
                 GameConfigs.IsShowMap = true;
-                _gameManager.ShowAllMaps();
                 break;
-            case 421:
-                GameConfigs.TreasureNum += 1;
-                _gameManager.thisTreasureNum = GameConfigs.TreasureNum;
-                break;
-            case 441:
+            case 221:
                 GameConfigs.OpenRoomRecover = true;
                 break;
-            case 422:
-            case 431:
-                GameConfigs.CharmRate += 3000;
+            case 202:
+            case 212:
+                GameConfigs.EscapeRate += value;
                 break;
-            case 510:
-                GameConfigs.BotPowerReduce += 1500;
-                break;
-            case 520:
-                GameConfigs.AfterBattleRecover += 3000;
-                break;
-            case 530:
-                GameConfigs.BotRewardItem += 2000;
-                break;
-            case 610:
-                GameConfigs.EscapeRate += 3000;
-                break;
-            case 620:
-                GameConfigs.EscapeAllDirection = true;
-                break;
-            case 630:
-                GameConfigs.EscapeRate += 3000;
-                break;
-            case 640:
+            case 222:
                 GameConfigs.EscapeLoss = 0;
                 break;
+            case 223:
+                GameConfigs.BotDamageReduce += value;
+                break;
             case 3:
-            case 710:
-                _gameManager.coin += 10;
+                _gameManager.coin += value;
                 _gameManager.UpdateShowProperty("coin");
                 break;
-            case 720:
-                GameConfigs.BotRewardCoinInc += 6000;
+            case 300:
+            case 310:
+            case 320:
+                _bpAction.AddItem(value);
                 break;
-            case 730:
-                GameConfigs.BossRewardCoinInc += 6000;
+            case 301:
+            case 311:
+                GameConfigs.ShopItemNum += value;
                 break;
-            case 740:
+            case 321:
+                GameConfigs.HighValueInShop = true;
+                break;
+            case 302:
+            case 312:
+                GameConfigs.RewardCoinIncRate += value;
+                break;
+            case 322:
                 GameConfigs.KillBotByCoin = true;
                 break;
-            case 721:
-                GameConfigs.ShopItemNum = 5;
+            case 323:
+                GameConfigs.CoinCostReduceRate += value;
                 break;
-            case 731:
-                GameConfigs.ShopGiftWeight = 3;
-                break;
-            case 741:
-                GameConfigs.ShopDiscount = 5000;
-                break;
-            case 810:
-            case 820:
-                _gameManager.GetRandomNormalItem();
-                break;
-            case 830:
-            case 840:
-                _gameManager.GetRandomHighValueItem();
+            default:
+                Debug.Log("Wrong giftId = " + thisGift);
                 break;
         }
 
-        //update bookList
-        if (unLearntTypes.Contains(LoadTxt.GiftDic[thisGift].type))
-            unLearntTypes.Remove(LoadTxt.GiftDic[thisGift].type);
-        else
-        {
-            if (LoadTxt.GiftDic[thisGift].level > BookList[LoadTxt.GiftDic[thisGift].family])
-                BookList[LoadTxt.GiftDic[thisGift].family] = LoadTxt.GiftDic[thisGift].level;
-        }
+        LearntGifts.Add(thisGift);
+        UnlearntGifts.Remove(thisGift);
+        UpdateBookList();
+
     }
 }

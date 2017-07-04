@@ -1,4 +1,5 @@
-﻿
+﻿using System.Collections.Generic;
+
 public class Item  {
     public int id;
     public string name;
@@ -10,10 +11,10 @@ public class Item  {
 public class Gift{
     public int id;
     public string name;
-    public int family;
     public string desc;
-    public int level;
+    public List<int> openReq;
     public int type;
+    public int value;
 }
 
 public class DgEvent{

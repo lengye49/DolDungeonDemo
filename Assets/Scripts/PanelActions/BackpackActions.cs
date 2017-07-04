@@ -27,6 +27,19 @@ public class BackpackActions : MonoBehaviour {
         HideTips();
 	}
 	
+    public void ResetBackpack(){
+        while(gridList.Count > 0)
+        {
+            GameObject o = gridList[0];
+            o.SetActive(false);
+            _gridPool.Add(gridList[0]);
+            gridList.RemoveAt(0);
+            UpdateItemIndex();
+        } 
+
+        backpackItemList = new List<int>();
+    }
+
     //添加物品
     public void AddItem(int itemId){
         if (backpackItemList.Count >= 12)
@@ -88,8 +101,7 @@ public class BackpackActions : MonoBehaviour {
                 _gameManager.AddHp((int)(_gameManager.heroHpMax * 0.2f));
                 break;
             case 2:
-                _gameManager.AddHp((int)(_gameManager.heroHpMax * 0.5f));
-
+                _gameManager.AddHp((int)(_gameManager.heroHpMax * 0.8f));
                 break;
             case 3:
                 GameConfigs.NextBotDontLose = true;
@@ -98,18 +110,35 @@ public class BackpackActions : MonoBehaviour {
                 _gameManager.GoToBoss();
                 break;
             case 5:
-                _gameManager.GoToShop();
+//                _gameManager.GoToShop();
+                _gameManager.heroPower += 20;
+                _gameManager.UpdateShowProperty("power");
                 break;
             case 6:
-                _gameManager.GoToGift();
+                int r = Random.Range(0, 10);
+                if (r <= 3)
+                {
+                    _gameManager.heroHp += 5;
+                    _gameManager.heroHpMax += 5;
+                }
+                else if (r <= 7)
+                {
+                    _gameManager.heroAtt += 2;
+                }
+                else
+                {
+                    _gameManager.heroDef += 1;
+                }
+                _gameManager.UpdateShowProperty();
+//                _gameManager.GoToGift();
                 break;
             case 7:
                 GameConfigs.NextBossAttInc++;
                 _gameManager.UpdateShowProperty("att");
                 break;
             case 8:
-                _gameManager.UpdateShowProperty("def");
                 GameConfigs.NextBossDefInc++;
+                _gameManager.UpdateShowProperty("def");
                 break;
             case 9:
                 _gameManager.ShowThisMap();
@@ -125,6 +154,9 @@ public class BackpackActions : MonoBehaviour {
                 break;
             case 13:
                 _giftActions.CallInGiftPanel();
+                break;
+            case 14:
+                _gameManager.AddHp((int)(_gameManager.heroHpMax * 0.5f));
                 break;
             default:
                 Debug.Log("Wrong ItemId" + itemId);

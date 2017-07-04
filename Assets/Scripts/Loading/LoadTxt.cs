@@ -28,9 +28,21 @@ public class LoadTxt : MonoBehaviour {
             g.id = int.Parse(ReadTxt.GetDataByRowAndCol(strs, i + 1, 0));
             g.name = ReadTxt.GetDataByRowAndCol(strs, i + 1, 1);
             g.desc = ReadTxt.GetDataByRowAndCol(strs, i + 1, 2);
-            g.level = int.Parse(ReadTxt.GetDataByRowAndCol(strs, i + 1, 3));
-            g.family = int.Parse(ReadTxt.GetDataByRowAndCol(strs, i + 1, 4));
-            g.type = int.Parse(ReadTxt.GetDataByRowAndCol(strs, i + 1, 5));
+            g.openReq = new List<int>();
+            string s = ReadTxt.GetDataByRowAndCol(strs, i + 1, 3);
+            if (s.Contains("|"))
+            {
+                string[] ss = s.Split('|');
+                for (int j = 0; j < ss.Length; j++)
+                    g.openReq.Add(int.Parse(ss[j]));
+            }
+            else
+            {
+                g.openReq.Add(int.Parse(s));
+            }
+                
+            g.type = int.Parse(ReadTxt.GetDataByRowAndCol(strs, i + 1, 4));
+            g.value = int.Parse(ReadTxt.GetDataByRowAndCol(strs, i + 1, 5));
             GiftDic.Add(g.id,g);
         }
     }
